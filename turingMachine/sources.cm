@@ -1,0 +1,7 @@
+Group is
+  $/basis.cm
+  stateMachine/sources.cm
+  tape/sources.cm
+  turing.sml
+  turing.sig
+  directions.sml
