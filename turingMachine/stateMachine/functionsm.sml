@@ -1,17 +1,15 @@
 functor FunctionSM (OPTIONS : sig
                               type action
-                              type direction
                             end) : STATE_MACHINE =
 struct
   open OPTIONS
 
-  type direction = direction
   type 'a tapeSymbol = 'a option
-  datatype 'a sm = Halt of action
-               | SM of 'a state
-  withtype 'a state = 'a tapeSymbol -> ('a tapeSymbol * direction * 'a sm)
+  datatype ('a, 'b) sm = Halt of action
+               | SM of ('a, 'b) state
+  withtype ('a, 'b) move = 'a tapeSymbol * 'b * ('a, 'b) sm
+  and      ('a, 'b) state = 'a tapeSymbol -> ('a, 'b) move
 
-  type 'a move = 'a tapeSymbol * direction * 'a sm
 
   exception Halted
   (* Strip away datatype constructor and return transition function,
@@ -22,7 +20,7 @@ struct
   (* Allows us to make subroutines *)
   fun subroutine sm onHalt =
     let
-      fun subroutine' (Halt action) x = onHalt action x
+      fun subroutine' (Halt action) x = onHalt (action, x)
         | subroutine' (SM q) x =
           case q x of (sym, dir, act) => (sym, dir, SM (subroutine' act))
     in

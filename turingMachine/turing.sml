@@ -1,11 +1,12 @@
 functor Turing (
     structure T : TAPE
     structure SM : STATE_MACHINE
-    where type 'a tapeSymbol = 'a T.tapeSymbol
-    sharing type T.direction = SM.direction) : TURING_MACHINE =
+    where type 'a tapeSymbol = 'a T.tapeSymbol) : TURING_MACHINE =
 struct
   structure T = T
   structure SM = SM
+
+  type 'a sm = ('a, T.direction) SM.sm
 
   (* Simulate 1 step on the stateMachine and tape *)
   fun step stateMachine tape =

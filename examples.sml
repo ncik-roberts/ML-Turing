@@ -4,9 +4,7 @@ struct
 
   structure TM = Turing(
     structure T = BiinfiniteTape(open LRS)
-    structure SM = FunctionSM(
-      type direction = LRS.direction
-      type action = action))
+    structure SM = FunctionSM(type action = action))
 
   (* Have access to SM constructor and subroutine without an annoying prefix *)
   open TM.SM
@@ -33,18 +31,21 @@ struct
     | qLeftOne (SOME One)   = (SOME One,  Left, SM qLeftOne)
     | qLeftOne (SOME Zero)  = (SOME One,  Left, SM qLeftZero)
 
+  val sLeftZero = SM qLeftZero
+
   (* Let's separate every pair of ones *)
   fun qStart NONE              = (NONE,      Left,  Halt Accept)
     | qStart (SOME Zero)       = (SOME Zero, Right, SM qStart)
     | qStart (SOME One)        = (SOME One,  Right, SM qJustReadOne)
   and qJustReadOne NONE        = (NONE,      Left,  Halt Accept)
     | qJustReadOne (SOME Zero) = (SOME Zero, Right, SM qStart)
-    | qJustReadOne (SOME One)  = (SOME One, Left, SM (qDepair ()))
-  and qDepair () =
+    | qJustReadOne (SOME One)  =
         let
-          fun onHalt _ x = (x, Stay, SM qStart)
+          (* Upon completion of subroutine, go back to initial state *)
+          val qDepair = subroutine sLeftZero (fn (_, x) => (x, Stay, SM qStart))
         in
-          subroutine (SM qLeftZero) onHalt
+          (* Hand off control to subroutine *)
+          (SOME One, Left, SM qDepair)
         end
 end
 
@@ -52,13 +53,14 @@ structure TM_Tester =
 struct
   open TM_Creator
 
+  (* Test on empty input tape *)
   val (Accept, [SOME Zero]) = TM.simulate (SM qRightZero) []
 
   val tape = [One, One]
   val (Accept, [SOME Zero, SOME One, SOME One]) = TM.simulate (SM qRightZero) tape
   val (Accept, [SOME One, SOME One, SOME One]) = TM.simulate (SM qLeftOne) tape
 
-  (* Let's separate the ones in friends! *)
+  (* Separate all pairs of ones *)
   val depair = SM qStart
   val friends = [One, One, Zero, Zero, One, One, One]
   val result = [SOME One, SOME Zero, SOME One, SOME Zero, SOME Zero, SOME One,
